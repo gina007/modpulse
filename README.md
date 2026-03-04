@@ -1,6 +1,7 @@
 # ModPulse 🔍
 
 **Community Health Analytics for Reddit Moderators**
+## Status: Beta
 
 ModPulse is a free, open-source dashboard that gives subreddit moderators real-time visibility into their community's health — detecting spam waves, visualizing engagement trends, and surfacing actionable insights to reduce moderation workload.
 
