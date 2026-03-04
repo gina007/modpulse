@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ModPulse — Community Health Analytics for Reddit Moderators</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c0f;
+    --bg2: #0f1217;
+    --bg3: #151a21;
+    --border: #1e2530;
+    --green: #00e5a0;
+    --green-dim: #00e5a022;
+    --green-mid: #00e5a055;
+    --amber: #ffb340;
+    --red: #ff4d6a;
+    --text: #e8edf3;
+    --text-dim: #6b7a8d;
+    --text-mid: #a0adb8;
+    --mono: 'Space Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-weight: 300;
+    overflow-x: hidden;
+  }
+
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 48px 48px;
+    opacity: 0.35;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Glow orb */
+  body::after {
+    content: '';
+    position: fixed;
+    top: -200px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 800px;
+    height: 600px;
+    background: radial-gradient(ellipse, #00e5a012 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 48px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(10, 12, 15, 0.85);
+    backdrop-filter: blur(12px);
+  }
+
+  .nav-logo {
+    font-family: var(--mono);
+    font-size: 15px;
+    color: var(--green);
+    letter-spacing: 0.05em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .nav-logo .dot {
+    width: 8px; height: 8px;
+    background: var(--green);
+    border-radius: 50%;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.8); }
+  }
+
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    list-style: none;
+  }
+
+  .nav-links a {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-dim);
+    text-decoration: none;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    transition: color 0.2s;
+  }
+
+  .nav-links a:hover { color: var(--green); }
+
+  .nav-cta {
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 8px 20px;
+    background: var(--green-dim);
+    border: 1px solid var(--green-mid);
+    color: var(--green) !important;
+    border-radius: 4px;
+    transition: background 0.2s !important;
+  }
+
+  .nav-cta:hover { background: var(--green-mid) !important; color: var(--bg) !important; }
+
+  /* HERO */
+  .hero {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 120px 24px 80px;
+  }
+
+  .hero-badge {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--green);
+    border: 1px solid var(--green-mid);
+    padding: 6px 16px;
+    border-radius: 100px;
+    margin-bottom: 32px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    animation: fadeUp 0.6s ease both;
+  }
+
+  .hero-badge::before {
+    content: '';
+    width: 6px; height: 6px;
+    background: var(--green);
+    border-radius: 50%;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+
+  .hero h1 {
+    font-family: var(--mono);
+    font-size: clamp(36px, 6vw, 80px);
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    margin-bottom: 24px;
+    animation: fadeUp 0.6s 0.1s ease both;
+  }
+
+  .hero h1 span { color: var(--green); }
+
+  .hero-sub {
+    font-size: clamp(16px, 2vw, 20px);
+    color: var(--text-mid);
+    max-width: 560px;
+    line-height: 1.7;
+    margin-bottom: 48px;
+    font-weight: 300;
+    animation: fadeUp 0.6s 0.2s ease both;
+  }
+
+  .hero-actions {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: center;
+    animation: fadeUp 0.6s 0.3s ease both;
+  }
+
+  .btn-primary {
+    font-family: var(--mono);
+    font-size: 13px;
+    letter-spacing: 0.05em;
+    padding: 14px 32px;
+    background: var(--green);
+    color: var(--bg);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    text-decoration: none;
+    font-weight: 700;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px #00e5a040;
+  }
+
+  .btn-secondary {
+    font-family: var(--mono);
+    font-size: 13px;
+    letter-spacing: 0.05em;
+    padding: 14px 32px;
+    background: transparent;
+    color: var(--text-mid);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: border-color 0.2s, color 0.2s;
+  }
+
+  .btn-secondary:hover { border-color: var(--green-mid); color: var(--green); }
+
+  /* DASHBOARD PREVIEW */
+  .dashboard-preview {
+    position: relative;
+    z-index: 1;
+    max-width: 900px;
+    margin: 64px auto 0;
+    animation: fadeUp 0.8s 0.4s ease both;
+  }
+
+  .dashboard-frame {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 32px 96px rgba(0,0,0,0.6), 0 0 0 1px var(--border);
+  }
+
+  .frame-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg3);
+  }
+
+  .frame-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+  }
+  .fd-red { background: #ff5f57; }
+  .fd-yellow { background: #febc2e; }
+  .fd-green { background: #28c840; }
+
+  .frame-url {
+    flex: 1;
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  .dashboard-inner {
+    padding: 24px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+
+  .stat-card {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+  }
+
+  .stat-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 8px;
+  }
+
+  .stat-value {
+    font-family: var(--mono);
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--green);
+  }
+
+  .stat-delta {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 4px;
+  }
+
+  .stat-delta.up { color: var(--green); }
+  .stat-delta.down { color: var(--red); }
+  .stat-delta.warn { color: var(--amber); }
+
+  .chart-area {
+    grid-column: span 3;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+  }
+
+  .chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+
+  .chart-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .chart-tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 3px;
+    background: var(--green-dim);
+    color: var(--green);
+    border: 1px solid var(--green-mid);
+  }
+
+  .chart-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    height: 80px;
+  }
+
+  .bar {
+    flex: 1;
+    background: var(--green-dim);
+    border: 1px solid var(--green-mid);
+    border-radius: 2px 2px 0 0;
+    transition: background 0.2s;
+    position: relative;
+  }
+
+  .bar:hover { background: var(--green-mid); }
+
+  .bar.alert {
+    background: rgba(255, 77, 106, 0.15);
+    border-color: rgba(255, 77, 106, 0.4);
+  }
+
+  .bar.alert:hover { background: rgba(255, 77, 106, 0.3); }
+
+  .alert-panel {
+    grid-column: span 3;
+    background: rgba(255, 77, 106, 0.06);
+    border: 1px solid rgba(255, 77, 106, 0.25);
+    border-radius: 8px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .alert-icon {
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  .alert-text {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--red);
+  }
+
+  .alert-text span { color: var(--text-mid); font-weight: 400; }
+
+  /* SCROLL indicator */
+  .scroll-hint {
+    position: absolute;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    animation: fadeUp 0.6s 0.8s ease both;
+  }
+
+  .scroll-hint span {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  .scroll-line {
+    width: 1px;
+    height: 40px;
+    background: linear-gradient(to bottom, var(--green), transparent);
+    animation: scrollLine 1.5s ease-in-out infinite;
+  }
+
+  @keyframes scrollLine {
+    0% { transform: scaleY(0); transform-origin: top; }
+    50% { transform: scaleY(1); transform-origin: top; }
+    51% { transform: scaleY(1); transform-origin: bottom; }
+    100% { transform: scaleY(0); transform-origin: bottom; }
+  }
+
+  /* FEATURES */
+  .section {
+    position: relative;
+    z-index: 1;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 120px 24px;
+  }
+
+  .section-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--green);
+    margin-bottom: 16px;
+  }
+
+  .section-title {
+    font-family: var(--mono);
+    font-size: clamp(28px, 4vw, 48px);
+    font-weight: 700;
+    line-height: 1.1;
+    margin-bottom: 16px;
+  }
+
+  .section-title span { color: var(--green); }
+
+  .section-desc {
+    font-size: 17px;
+    color: var(--text-mid);
+    max-width: 540px;
+    line-height: 1.7;
+    font-weight: 300;
+    margin-bottom: 64px;
+  }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .feature-card {
+    background: var(--bg2);
+    padding: 32px;
+    transition: background 0.2s;
+  }
+
+  .feature-card:hover { background: var(--bg3); }
+
+  .feature-icon {
+    font-size: 24px;
+    margin-bottom: 16px;
+  }
+
+  .feature-name {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 8px;
+    letter-spacing: 0.02em;
+  }
+
+  .feature-desc {
+    font-size: 14px;
+    color: var(--text-dim);
+    line-height: 1.65;
+    font-weight: 300;
+  }
+
+  /* HOW IT WORKS */
+  .steps {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 32px;
+    counter-reset: step;
+  }
+
+  .step {
+    counter-increment: step;
+    position: relative;
+    padding-left: 24px;
+    border-left: 1px solid var(--border);
+  }
+
+  .step::before {
+    content: '0' counter(step);
+    position: absolute;
+    top: 0; left: -1px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--green);
+    background: var(--bg);
+    padding: 0 8px 0 0;
+    letter-spacing: 0.1em;
+  }
+
+  .step-title {
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 700;
+    margin: 28px 0 12px;
+    color: var(--text);
+  }
+
+  .step-desc {
+    font-size: 14px;
+    color: var(--text-dim);
+    line-height: 1.7;
+    font-weight: 300;
+  }
+
+  /* POLICY */
+  .policy-section {
+    position: relative;
+    z-index: 1;
+    padding: 80px 24px;
+    background: var(--bg2);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .policy-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 80px;
+    align-items: center;
+  }
+
+  .policy-title {
+    font-family: var(--mono);
+    font-size: clamp(24px, 3vw, 40px);
+    font-weight: 700;
+    margin-bottom: 16px;
+  }
+
+  .policy-title span { color: var(--green); }
+
+  .policy-desc {
+    font-size: 16px;
+    color: var(--text-mid);
+    line-height: 1.7;
+    font-weight: 300;
+  }
+
+  .policy-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .policy-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+
+  .policy-check {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--green);
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .policy-text {
+    font-size: 14px;
+    color: var(--text-mid);
+    line-height: 1.6;
+    font-weight: 300;
+  }
+
+  /* CTA */
+  .cta-section {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    padding: 120px 24px;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+
+  .cta-section h2 {
+    font-family: var(--mono);
+    font-size: clamp(28px, 4vw, 52px);
+    font-weight: 700;
+    line-height: 1.1;
+    margin-bottom: 24px;
+  }
+
+  .cta-section h2 span { color: var(--green); }
+
+  .cta-section p {
+    font-size: 17px;
+    color: var(--text-mid);
+    line-height: 1.7;
+    font-weight: 300;
+    margin-bottom: 40px;
+  }
+
+  .cta-note {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 16px;
+    letter-spacing: 0.05em;
+  }
+
+  /* FOOTER */
+  footer {
+    position: relative;
+    z-index: 1;
+    border-top: 1px solid var(--border);
+    padding: 32px 48px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .footer-logo {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--green);
+  }
+
+  .footer-links {
+    display: flex;
+    gap: 32px;
+    list-style: none;
+  }
+
+  .footer-links a {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    text-decoration: none;
+    letter-spacing: 0.08em;
+    transition: color 0.2s;
+  }
+
+  .footer-links a:hover { color: var(--green); }
+
+  .footer-copy {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  /* ANIMATIONS */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(32px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* RESPONSIVE */
+  @media (max-width: 768px) {
+    nav { padding: 16px 24px; }
+    .nav-links { display: none; }
+    .dashboard-inner { grid-template-columns: 1fr 1fr; }
+    .chart-area { grid-column: span 2; }
+    .alert-panel { grid-column: span 2; }
+    .policy-inner { grid-template-columns: 1fr; gap: 40px; }
+    footer { flex-direction: column; gap: 16px; text-align: center; }
+    .footer-links { flex-wrap: wrap; justify-content: center; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">
+    <div class="dot"></div>
+    MODPULSE
+  </div>
+  <ul class="nav-links">
+    <li><a href="#features">Features</a></li>
+    <li><a href="#how">How it works</a></li>
+    <li><a href="#privacy">Privacy</a></li>
+    <li><a href="https://github.com/gina007/modpulse" target="_blank">GitHub</a></li>
+    <li><a href="#" class="nav-cta">Get Access</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge">Free & Open Source · Read-Only · For Moderators</div>
+
+  <h1>Your subreddit,<br>under the <span>microscope</span></h1>
+
+  <p class="hero-sub">
+    ModPulse gives Reddit moderators real-time visibility into community health — detecting spam waves, tracking engagement trends, and surfacing anomalies before they become problems.
+  </p>
+
+  <div class="hero-actions">
+    <a href="https://github.com/gina007/modpulse" target="_blank" class="btn-primary">View on GitHub</a>
+    <a href="#features" class="btn-secondary">See Features →</a>
+  </div>
+
+  <!-- Dashboard preview -->
+  <div class="dashboard-preview">
+    <div class="dashboard-frame">
+      <div class="frame-bar">
+        <div class="frame-dot fd-red"></div>
+        <div class="frame-dot fd-yellow"></div>
+        <div class="frame-dot fd-green"></div>
+        <div class="frame-url">modpulse.app — r/MachineLearning</div>
+      </div>
+      <div class="dashboard-inner">
+        <div class="stat-card">
+          <div class="stat-label">Posts this week</div>
+          <div class="stat-value">1,247</div>
+          <div class="stat-delta up">↑ 12% vs last week</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Engagement Score</div>
+          <div class="stat-value">84.2</div>
+          <div class="stat-delta up">↑ Healthy</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">New Account Ratio</div>
+          <div class="stat-value">18%</div>
+          <div class="stat-delta">→ Within normal range</div>
+        </div>
+
+        <div class="chart-area">
+          <div class="chart-header">
+            <div class="chart-title">Post Volume — Last 14 Days</div>
+            <div class="chart-tag">LIVE</div>
+          </div>
+          <div class="chart-bars">
+            <div class="bar" style="height:40%"></div>
+            <div class="bar" style="height:55%"></div>
+            <div class="bar" style="height:48%"></div>
+            <div class="bar" style="height:62%"></div>
+            <div class="bar" style="height:58%"></div>
+            <div class="bar" style="height:70%"></div>
+            <div class="bar alert" style="height:95%"></div>
+            <div class="bar alert" style="height:88%"></div>
+            <div class="bar" style="height:52%"></div>
+            <div class="bar" style="height:60%"></div>
+            <div class="bar" style="height:65%"></div>
+            <div class="bar" style="height:72%"></div>
+            <div class="bar" style="height:68%"></div>
+            <div class="bar" style="height:75%"></div>
+          </div>
+        </div>
+
+        <div class="alert-panel">
+          <div class="alert-icon">⚠</div>
+          <div class="alert-text">
+            VOLUME SPIKE DETECTED — <span>Post volume on Mar 15 was 3.2× the 7-day average. Possible coordinated activity. Review recommended.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="scroll-hint">
+    <span>Scroll</span>
+    <div class="scroll-line"></div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features" class="section">
+  <div class="reveal">
+    <div class="section-label">// Features</div>
+    <h2 class="section-title">Everything a mod<br>needs to <span>stay ahead</span></h2>
+    <p class="section-desc">Built specifically for subreddit moderators who want data, not guesswork.</p>
+  </div>
+
+  <div class="features-grid reveal">
+    <div class="feature-card">
+      <div class="feature-icon">📊</div>
+      <div class="feature-name">Engagement Dashboard</div>
+      <div class="feature-desc">Visualize post volume, comment depth, and upvote ratios over time. Spot trends before they become problems.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🚨</div>
+      <div class="feature-name">Anomaly Alerts</div>
+      <div class="feature-desc">Get notified when post volume spikes, new account concentration rises, or engagement drops below baseline.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔑</div>
+      <div class="feature-name">Keyword Tracker</div>
+      <div class="feature-desc">See which topics and keywords dominate your community week-over-week. Identify emerging narratives early.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">👥</div>
+      <div class="feature-name">Account Age Heatmap</div>
+      <div class="feature-desc">Detect unusual concentrations of brand-new accounts posting simultaneously — a key signal for brigading.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📬</div>
+      <div class="feature-name">Weekly Mod Digest</div>
+      <div class="feature-desc">Auto-generated weekly summary of community activity. Stay informed without spending hours in the dashboard.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔗</div>
+      <div class="feature-name">Multi-Subreddit View</div>
+      <div class="feature-desc">Compare health metrics across communities side by side. Perfect for mods managing multiple subreddits.</div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="how" class="section" style="padding-top:0">
+  <div class="reveal">
+    <div class="section-label">// How it works</div>
+    <h2 class="section-title">Simple setup,<br><span>powerful insights</span></h2>
+    <p class="section-desc">ModPulse is open-source and self-hostable. Get started in minutes.</p>
+  </div>
+
+  <div class="steps reveal">
+    <div class="step">
+      <div class="step-title">Connect your subreddit</div>
+      <div class="step-desc">Authenticate with Reddit via OAuth. ModPulse only requests read permissions — it never posts, votes, or takes any action.</div>
+    </div>
+    <div class="step">
+      <div class="step-title">Configure your thresholds</div>
+      <div class="step-desc">Set your alert thresholds for post volume spikes, new account ratios, and engagement drops based on your community's norms.</div>
+    </div>
+    <div class="step">
+      <div class="step-title">Monitor your dashboard</div>
+      <div class="step-desc">Watch real-time metrics update as your community grows. Get alerts the moment something unusual happens.</div>
+    </div>
+    <div class="step">
+      <div class="step-title">Receive weekly digests</div>
+      <div class="step-desc">Get a concise weekly summary delivered to your inbox. Spend less time moderating, more time building community.</div>
+    </div>
+  </div>
+</section>
+
+<!-- PRIVACY -->
+<div id="privacy" class="policy-section">
+  <div class="policy-inner">
+    <div class="reveal">
+      <div class="section-label">// Privacy & Policy</div>
+      <h2 class="policy-title">Built with<br><span>Responsible</span><br>data use</h2>
+      <p class="policy-desc">
+        ModPulse is read-only by design. We believe moderation tools should empower communities, not exploit them.
+      </p>
+    </div>
+    <div class="policy-list reveal">
+      <div class="policy-item">
+        <div class="policy-check">[✓]</div>
+        <div class="policy-text"><strong>Read-only access</strong> — ModPulse never posts, comments, votes, or takes any automated action on Reddit.</div>
+      </div>
+      <div class="policy-item">
+        <div class="policy-check">[✓]</div>
+        <div class="policy-text"><strong>Public data only</strong> — Only accesses posts and comments already visible to any user.</div>
+      </div>
+      <div class="policy-item">
+        <div class="policy-check">[✓]</div>
+        <div class="policy-text"><strong>No data resale</strong> — Community data is never sold, shared, or monetized.</div>
+      </div>
+      <div class="policy-item">
+        <div class="policy-check">[✓]</div>
+        <div class="policy-text"><strong>Rate limit compliant</strong> — Strictly respects Reddit's API rate limits (60 req/min).</div>
+      </div>
+      <div class="policy-item">
+        <div class="policy-check">[✓]</div>
+        <div class="policy-text"><strong>Opt-in only</strong> — Moderators must explicitly add their subreddit. No community is analyzed without consent.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CTA -->
+<div class="cta-section reveal">
+  <h2>Ready to see your<br>community <span>clearly</span>?</h2>
+  <p>ModPulse is free, open-source, and self-hostable. Join moderators who use data to build healthier communities.</p>
+  <a href="https://github.com/gina007/modpulse" target="_blank" class="btn-primary">View on GitHub →</a>
+  <div class="cta-note">MIT License · No credit card required · Self-hostable</div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">MODPULSE</div>
+  <ul class="footer-links">
+    <li><a href="https://github.com/gina007/modpulse" target="_blank">GitHub</a></li>
+    <li><a href="#features">Features</a></li>
+    <li><a href="#privacy">Privacy</a></li>
+    <li><a href="mailto:hello@modpulse.app">Contact</a></li>
+  </ul>
+  <div class="footer-copy">© 2026 ModPulse</div>
+</footer>
+
+<script>
+  // Scroll reveal
+  const reveals = document.querySelectorAll('.reveal');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry, i) => {
+      if (entry.isIntersecting) {
+        setTimeout(() => entry.target.classList.add('visible'), i * 80);
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.1 });
+  reveals.forEach(el => observer.observe(el));
+
+  // Animate bars on load
+  document.querySelectorAll('.bar').forEach((bar, i) => {
+    bar.style.opacity = '0';
+    bar.style.transform = 'scaleY(0)';
+    bar.style.transformOrigin = 'bottom';
+    bar.style.transition = `opacity 0.4s ${0.5 + i * 0.03}s ease, transform 0.4s ${0.5 + i * 0.03}s ease`;
+    setTimeout(() => {
+      bar.style.opacity = '1';
+      bar.style.transform = 'scaleY(1)';
+    }, 100);
+  });
+</script>
+</body>
+</html>
