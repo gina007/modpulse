@@ -169,3 +169,4 @@ MIT License — see [LICENSE](LICENSE) for details.
 ## Contact
 
 Built for the Reddit moderator community. Questions or partnership inquiries: hello@modpulse.app
+Add project status badge
